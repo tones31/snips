@@ -9,10 +9,10 @@ var point1 = null;
 var point2 = null;
 var clickedCount = 0;
 
-for (let x = 0; x < rows; x++) {
+for (let y = 0; y < rows; y++) {
   var $tr = $('<tr></tr>')
   var row = [];
-  for (let y = 0; y < cols; y++) {
+  for (let x = 0; x < cols; x++) {
     var $col = $('<td>' + x + ',' + y + '</td>');
     $col.click(function() {
       if (clickPoint(x, y))
@@ -67,10 +67,10 @@ function updateDisplay() {
 
 function isTouching(x1, y1, x2, y2) {
   var deltaX = x1 - x2;
-	var deltaY = y1 - y2;
-	
-	if((deltaX === 0 || deltaX === 1 || deltaX === -1) && (deltaY === 0 || deltaY === 1 || deltaY === -1))
-	  return true;
+  var deltaY = y1 - y2;
+
+  if ((deltaX === 0 || deltaX === 1 || deltaX === -1) && (deltaY === 0 || deltaY === 1 || deltaY === -1))
+    return true;
 
   return false;
 }
