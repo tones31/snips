@@ -1,0 +1,13 @@
+td {
+  padding: 10px;
+  cursor: pointer;
+  border: 1px solid grey;
+}
+
+td:hover {
+  background: skyblue;
+}
+
+td.clicked {
+  background: red;
+}
