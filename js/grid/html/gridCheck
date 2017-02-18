@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<title>Grid Check</title>
+	</head>
+	<body>
+		<table>
+
+	</table>
+	<hr>
+	<div>
+ 	 Point 1: <span id="point1"></span>
+	</div>
+	<div>
+  	Point 2: <span id="point2"></span>
+	</div>
+	<div>
+ 	 Is touching: <span id="isTouching"></span>
+	</div>
+	<script src="../js/gridCheck.js"></script>
+	<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+	</body>
+</html>
