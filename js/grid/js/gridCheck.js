@@ -66,21 +66,11 @@ function updateDisplay() {
 }
 
 function isTouching(x1, y1, x2, y2) {
-  // check left/right
-  if ((y1 === y2) && (x1 + 1 === x2 || x1 - 1 === x2))
-    return true;
-
-  // check up/down
-  if ((x1 === x2) && (y1 + 1 === y2 || y1 - 1 === y2))
-    return true;
-
-  // check right corners
-  if ((x1 + 1 === x2) && (y1 + 1 === y2 || y1 - 1 === y2))
-    return true;
-
-  // check left corners
-  if ((x1 - 1 === x2) && (y1 + 1 === y2 || y1 - 1 === y2))
-    return true;
+  var deltaX = x1 - x2;
+	var deltaY = y1 - y2;
+	
+	if((deltaX === 0 || deltaX === 1 || deltaX === -1) && (deltaY === 0 || deltaY === 1 || deltaY === -1))
+	  return true;
 
   return false;
 }
