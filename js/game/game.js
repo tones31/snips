@@ -1,5 +1,9 @@
 'use strict';
 
+////////////////////////////////////////////
+// Utilities
+////////////////////////////////////////////
+
 class ConsoleLogger{
     constructor(name, enabled = true){
         this.name = name;
@@ -98,6 +102,83 @@ class Clock extends Interval {
     }
 }
 
+class Grid {
+
+    constructor(rows, cols){
+        this.table = [];
+        this.rows = rows;
+        this.cols = cols;
+        this.build();
+        return this;
+    }
+    
+    build(){
+        for (let x = 0; x < this.cols; x++) {
+            let row = [];
+            for (let y = 0; y < this.cols; y++) {
+                row.push(0);
+            }
+            this.table.push(row);
+        }
+        return this;
+    } 
+    
+    isTouching(x1, y1, x2, y2) {
+        let deltaX = x1 - x2;
+        let deltaY = y1 - y2;      
+        return ((deltaX === 0 || deltaX === 1 || deltaX === -1) && (deltaY === 0 || deltaY === 1 || deltaY === -1));
+      }
+      
+}
+
+class HexGrid extends Grid {
+
+    constructor(rows, cols){
+        super(rows, cols);
+
+        return this
+    }
+
+    isTouchingHex(x1, y1, x2, y2) {
+        let deltaX = x1 - x2;
+        let deltaY = y1 - y2;
+    
+        // check same x
+        if (deltaX === 0) {
+            switch (deltaY) {
+                // check bottom right
+                case -1:
+                // check bottom
+                case -2:
+                // check top right
+                case 1:
+                // check above
+                case 2:
+                    return true;
+                    break;
+            }
+        } 
+        else if (deltaX === 1) {
+            switch (deltaY) {
+                // check bottom left
+                case -1:
+                // check top left
+                case 1:
+                    return true;
+                    break;
+            }
+        }
+    
+        return false;
+    }
+}
+
+console.log(new Grid(10, 9).table)
+
+////////////////////////////////////////////
+// Players
+////////////////////////////////////////////
+
 class Player {
     constructor(){
         this.name = "Player";
@@ -119,6 +200,10 @@ class BotPlayer extends Player {
         return this;
     }
 }
+
+////////////////////////////////////////////
+// Game
+////////////////////////////////////////////
 
 class Vector3 {
     constructor(x = 0, y = 0, z = 0){
@@ -144,46 +229,28 @@ class Vector3 {
 class FpsMeter {
 
     constructor(){
-        this.current = 0;
-        this.lastDraw = 0;
-        this.frame = 0;
-        //this.fpsInterval = new Interval(this.drawDelay, this._fpsIntervalCallback.bind(this));
-        this.ms = 0;
-        //this.msInterval = new Interval(1, this._msIntervalCallback.bind(this));
     }
 
     _fpsIntervalCallback(){
 
     }
-
-    _msIntervalCallback(){
-        this.ms = this.ms === 1000 ? 0 : this.ms + 1;
-    }
     
     increaseFpsFrame(){
-        this.lastDraw = this.ms;
-        if(this.ms === 0){
-            this.frame = 1;
-        }
-        else {
-            this.frame++;
-        }
+        this.frames++;
         return this;
     }
 
-    getCurrentFps(){
-        return Math.round(this.current);
+    getFps(){
+        return Math.round(this.fps);
     }
 
     start(){
         this.fpsInterval.start();
-        this.msInterval.start();
         return this;
     }
 
     stop(){
         this.fpsInterval.stop();
-        this.msInterval.stop();
         return this;
     }
 }
@@ -191,6 +258,8 @@ class FpsMeter {
 class GameRenderer {
 
     constructor(canvas){
+        let self = this;
+        
         let _canvas = typeof(canvas) === 'string' ? document.getElementById(canvas) : canvas;
         if(!_canvas || !_canvas.getContext){
             throw new Error('GameRenderer.constructor: incompatible browser - cannot use canvas element');
@@ -204,14 +273,21 @@ class GameRenderer {
             width : _canvas.clientWidth
         };
 
+
         this.loop = null;
-        this.maxfps = 60;
-        this.averageFps = 0;
-        this.fpsMeter = new FpsMeter();
         this.frame = 0;
         this.drawDelay = 1000 / this.maxFps;
-        this.elapsedMs = 0;
-       // this.elapsedMsInterval = new Interval(1);
+
+        // fps
+        this.maxfps = 60;
+        this.averageFps = 0;
+        this.fps = 0;
+        this.fpsFrame = 0;
+        this.fpsInterval = new Interval(1000, function(){
+            self.fps = self.fpsFrame;
+            self.fpsFrame = 0;
+        });
+        
         this.view = {
             bottomleft :  new Vector3(0, 0, 0),
             bottomright :  new Vector3(this.canvas.width, 0, 0),
@@ -231,59 +307,47 @@ class GameRenderer {
         //this.log.debug('render');
         this.canvas.ctx2d.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.frame++;
+        this.fpsFrame++;
         this.renderDebug();
         return this;
     }
 
     renderDebug(){
-        this.fpsMeter.increaseFpsFrame();
         this.canvas.ctx2d.fillText(this.getAverageFps(), 20, 20);
-        this.canvas.ctx2d.fillText(this.fpsMeter.getCurrentFps(), 100, 20);
-        this.canvas.ctx2d.fillText(this.fpsMeter.ms, 180, 20);
-        this.canvas.ctx2d.fillText(this.frame, 260, 20);
-        this.canvas.ctx2d.fillText(this.elapsedMs, 320, 20);
+        this.canvas.ctx2d.fillText(this.fps, 100, 20);
+        this.canvas.ctx2d.fillText(this.frame, 180, 20);
+        this.canvas.ctx2d.fillText(this.getElapsedMs(), 300, 20);
         return this;
+    }
+
+    getElapsedMs(){
+        return performance.now();
     }
 
     // fps
 
-    getAverageFps(frame, elapsedMs){
-        return Math.round(this.averageFps = this.frame / this.elapsedMs);
-    }
-
-    trackFps(state){
-        if(state){
-            this.fpsMeter.start();
-        }
-        else {
-            this.fpsMeter.stop();
-        }
-        return this;
+    getAverageFps(){
+        return this.averageFps = Math.round(this.frame / (this.getElapsedMs() / 1000));
     }
 
     // control
 
     start(){
         let self = this;
-        this.trackFps(true);
-        this.loop = setInterval(this.render.bind(this), this.frames);
-        this.elapsedMsInterval = setInterval(function(){
-            self.elapsedMs += 1;
-        }, 1);
+        this.loop = setInterval(this.render.bind(this), this.drawDelay);
+        this.fpsInterval.start();
         return this;
     }
 
     stop(){
-        this.trackFps(false);
         clearInterval(this.loop);
-        clearInterval(this.elapsedMsInterval);
+        this.fpsInterval.stop();
         return this;
     }
 
     pause(){
-        this.trackFps(false);
         clearInterval(this.loop);
-        clearInterval(this.elapsedMsInterval);
+        this.fpsInterval.stop();
         return this;
     }
 
@@ -302,6 +366,16 @@ class GameRenderer {
         this.canvas.ctx2d.font = font;
     }
 
+}
+
+class GameObject {
+    constructor(){
+        this.name = "GameObject";
+        this.speed = 0;
+        this.position = new Vector3();
+        this.velocity = new Vector3();
+        return this;
+    }
 }
 
 class Game {
@@ -326,16 +400,6 @@ class Game {
     createBotPlayer(options){
         let bot = new BotPlayer(options);
         this.bots[options.name] = bot;
-        return this;
-    }
-}
-
-class GameObject {
-    constructor(){
-        this.name = "GameObject";
-        this.speed = 0;
-        this.position = new Vector3();
-        this.velocity = new Vector3();
         return this;
     }
 }
